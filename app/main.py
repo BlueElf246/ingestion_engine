@@ -6,7 +6,7 @@ import asyncio
 from starlette.concurrency import run_in_threadpool
 
 from app.config import get_settings
-from app.database import get_db, init_db, Database
+from app.services.database import get_db, init_db, Database
 from app.services.scraper import get_content, get_list_of_links
 
 settings = get_settings()
