@@ -4,8 +4,9 @@ from bs4 import BeautifulSoup
 def get_content(url):
     response = requests.get(url)
     soup = BeautifulSoup(response.text, 'html.parser')
+    print(soup.prettify())
     title = soup.find('h1', class_='title-detail').get_text()
     content = soup.find('article', class_='fck_detail').get_text()
     return title,content
 title,content = get_content(url)
-print(title, content)
+# print(title, content)

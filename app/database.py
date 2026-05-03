@@ -5,6 +5,42 @@ from sqlalchemy import create_engine
 from app.models import metadata
 
 
+class Database:
+    """Simple database wrapper around a psycopg3 connection.
+
+    Provides helper methods for common DB operations used by the app.
+    """
+
+    def __init__(self, conn: psycopg.Connection) -> None:
+        self._conn = conn
+
+    def save_scraped_page(self, url: str, title: str, content: str) -> None:
+        """Insert or update a scraped page record.
+
+        Raises any exception to the caller for handling.
+        """
+        with self._conn.cursor() as cur:
+            cur.execute(
+                """
+                INSERT INTO scraped_pages (url, title, content)
+                VALUES (%s, %s, %s)
+                ON CONFLICT (url) DO UPDATE
+                  SET title = EXCLUDED.title,
+                      content = EXCLUDED.content,
+                      scraped_at = NOW()
+                """,
+                (url, title, content),
+            )
+        self._conn.commit()
+
+    def close(self) -> None:
+        """Close the underlying connection."""
+        try:
+            self._conn.close()
+        except Exception:
+            pass
+
+
 def init_db(dsn: str) -> None:
     # Ensure SQLAlchemy uses the psycopg (psycopg3) dialect instead of
     # defaulting to psycopg2. If the DSN is the generic postgres scheme,
@@ -17,7 +53,7 @@ def init_db(dsn: str) -> None:
     metadata.create_all(engine)
 
 
-def get_db(request: Request) -> psycopg.Connection:
+def get_db(request: Request) -> Database:
     db = getattr(request.app.state, "db", None)
     if db is None:
         raise HTTPException(status_code=500, detail="Database is not initialized")
